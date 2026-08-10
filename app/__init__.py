@@ -11,10 +11,10 @@ def create_app():
     app = Flask(__name__)
 
     # Initialize the database
-    # create_tables()
+    create_tables()
 
     # Create services
-    # cache_service = CacheService()
+    cache_service = CacheService()
     # sportsbook_service = SportsbookService()
 
     # update_service = UpdateService(
@@ -23,7 +23,7 @@ def create_app():
     # )
 
     # # Register services
-    # app.cache_service = cache_service
+    app.cache_service = cache_service
     # app.sportsbook_service = sportsbook_service
     # app.update_service = update_service
 

@@ -220,4 +220,5 @@ __marimo__/
 # Extra files
 scratch.py
 todo.txt
+app/odds.db
 venv/
