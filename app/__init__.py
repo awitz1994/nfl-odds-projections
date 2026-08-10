@@ -15,17 +15,17 @@ def create_app():
 
     # Create services
     cache_service = CacheService()
-    # sportsbook_service = SportsbookService()
+    sportsbook_service = SportsbookService()
 
-    # update_service = UpdateService(
-    #     sportsbook_service=sportsbook_service,
-    #     cache_service=cache_service
-    # )
+    update_service = UpdateService(
+        sportsbook_service=sportsbook_service,
+        cache_service=cache_service
+    )
 
     # # Register services
     app.cache_service = cache_service
     # app.sportsbook_service = sportsbook_service
-    # app.update_service = update_service
+    app.update_service = update_service
 
     # Register blueprints
     app.register_blueprint(api_bp)

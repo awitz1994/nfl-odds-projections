@@ -38,8 +38,9 @@ def team_odds(team):
 @api_bp.route("/api/update", methods=["POST"])
 def update():
 
-    current_app.update_service.refresh()
+    odds = current_app.update_service.refresh()
 
     return jsonify({
-        "status": "updated"
+        "status": "updated",
+        "records": len(odds),
     })
