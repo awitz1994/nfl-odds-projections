@@ -3,11 +3,29 @@ from app.database import get_connection
 
 class CacheService:
 
-    def save_odds(self, odds):
+    def create_snapshot(self, created_at):
         with get_connection() as connection:
+
+            cursor = connection.execute(
+                """
+                INSERT INTO snapshots (
+                    created_at,
+                    status
+                )
+                VALUES (?, ?)
+                """,
+                (created_at, "pending"),
+            )
+
+            return cursor.lastrowid
+
+    def save_odds(self, snapshot_id, odds):
+        with get_connection() as connection:
+
             connection.executemany(
                 """
                 INSERT INTO odds (
+                    snapshot_id,
                     team,
                     sportsbook,
                     market,
@@ -15,18 +33,48 @@ class CacheService:
                     price,
                     updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                odds
+                [
+                    (
+                        snapshot_id,
+                        *odd,
+                    )
+                    for odd in odds
+                ],
+            )
+
+    def mark_snapshot_successful(self, snapshot_id):
+        with get_connection() as connection:
+
+            connection.execute(
+                """
+                UPDATE snapshots
+                SET status = ?
+                WHERE id = ?
+                """,
+                ("successful", snapshot_id),
             )
 
     def get_all_odds(self):
         with get_connection() as connection:
+
             rows = connection.execute(
                 """
-                SELECT *
+                SELECT
+                    odds.*
                 FROM odds
-                ORDER BY team, sportsbook
+                JOIN snapshots
+                    ON odds.snapshot_id = snapshots.id
+                WHERE snapshots.status = 'successful'
+                AND snapshots.id = (
+                    SELECT MAX(id)
+                    FROM snapshots
+                    WHERE status = 'successful'
+                )
+                ORDER BY
+                    odds.team,
+                    odds.sportsbook
                 """
             ).fetchall()
 
@@ -34,18 +82,24 @@ class CacheService:
 
     def get_team_odds(self, team):
         with get_connection() as connection:
+
             rows = connection.execute(
                 """
-                SELECT *
+                SELECT
+                    odds.*
                 FROM odds
-                WHERE team = ?
-                ORDER BY sportsbook
+                JOIN snapshots
+                    ON odds.snapshot_id = snapshots.id
+                WHERE snapshots.status = 'successful'
+                AND snapshots.id = (
+                    SELECT MAX(id)
+                    FROM snapshots
+                    WHERE status = 'successful'
+                )
+                AND odds.team = ?
+                ORDER BY odds.sportsbook
                 """,
-                (team,)
+                (team,),
             ).fetchall()
 
             return [dict(row) for row in rows]
-
-    def clear(self):
-        with get_connection() as connection:
-            connection.execute("DELETE FROM odds")
